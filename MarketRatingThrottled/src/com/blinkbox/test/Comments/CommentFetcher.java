@@ -19,8 +19,6 @@ import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeMessage;
-import javax.net.ssl.SSLSession;
-import javax.mail.Message.RecipientType; 
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -41,7 +39,6 @@ import com.gc.android.market.api.model.Market.Comment;
 import com.gc.android.market.api.model.Market.CommentsRequest;
 import com.gc.android.market.api.model.Market.CommentsResponse;
 import com.gc.android.market.api.model.Market.ResponseContext;
-//import com.google.protobuf.Message;
 
 public class CommentFetcher {
 	/**
