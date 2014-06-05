@@ -615,6 +615,18 @@ public class CommentFetcher {
 		closePrinter();	
 	}
 	
+	public List<Comment> getBadComments(List<Comment> pComents, int pRating){
+		
+		List<Comment> badComments = new ArrayList<Comment>(); 
+		for(Comment comment : pComents){
+			 if (comment.getRating() <= pRating){
+				 badComments.add(comment); 
+			 }
+		}
+		return badComments; 		
+	}
+	
+	
 	public void appendCommentData(List<Comment> pComents, String pFileName, CSVFormat pFormat){
 		try {
 			mPrinter = new CSVPrinter(new PrintWriter(new FileWriter(pFileName, true)), pFormat);
