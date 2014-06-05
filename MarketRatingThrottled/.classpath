@@ -12,5 +12,6 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="libs/mail.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
