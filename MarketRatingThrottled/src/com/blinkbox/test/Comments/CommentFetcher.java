@@ -86,7 +86,8 @@ public class CommentFetcher {
 	private static long mDate;
 	private static int mNumberOfCommentsToFetch=-1;
 	private static int mTotalToFetch=-1;
-	
+
+		
 	public void getCommentsNumber(final String pUserName, final String pPassword, final String pPackageName, final int pNumberOfCommentToFetch, 
 			final String pFileName, final CSVFormat pFormat, final int pRequestThrottle, final int pTimeout){
 		getComments(pUserName, pPassword, mPackageName, 0, pNumberOfCommentToFetch, mFileName, mCVSFormat, mThrottleTime, mRecoveryTime);
@@ -631,8 +632,10 @@ public class CommentFetcher {
 	}
 	
 	
-	public void sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject, String pMessage){
-		String host = "localhost";
+	public void sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject){
+		  if (pComments.size()==0)
+			  return;
+		  String host = "localhost";
 	      Properties properties = System.getProperties();
 	      properties.setProperty("mail.smtp.host", host);
 	      Session session = Session.getDefaultInstance(properties);
@@ -649,7 +652,7 @@ public class CommentFetcher {
 	         message.setFrom(new InternetAddress(pFrom));
 	         message.addRecipient(Message.RecipientType.TO, new InternetAddress(pTo));
 	         message.setSubject(pSubject);
-	         message.setText(pMessage);
+	         message.setText(sb.toString());
 	         Transport.send(message);
 	         System.out.println("Sent message successfully....");
 	      }catch (MessagingException mex) {
