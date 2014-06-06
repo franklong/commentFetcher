@@ -89,7 +89,9 @@ public class CommentFetcher {
 
 	private static final String mEmailFrom = "autotest";
 	private static String mEmailTo = "";
-	public static int mAlertRating;
+	private static final String mHost = "smtp.gmail.com";
+	private static final String mSubject = "Low Ratings";
+	public static int mAlertRating = 2;
 
 	public void getCommentsNumber(final String pUserName, final String pPassword, final String pPackageName, final int pNumberOfCommentToFetch, 
 			final String pFileName, final CSVFormat pFormat, final int pRequestThrottle){
@@ -258,6 +260,8 @@ public class CommentFetcher {
 										writeList.size()));		
 							}
 							//TODO this is where we email
+							//sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject, int pAlertRating)
+							sendMail(writeList, mEmailFrom, mEmailTo, mHost, mSubject, mAlertRating);
 						}
 					}  
 				 }
@@ -437,6 +441,7 @@ public class CommentFetcher {
 		options.addOption("m", "recovery", true, "Time to wait before another request when a 429 has been issued");
 		options.addOption("e", "excel", false, "Use EXCEL format");
 		options.addOption("eto", "emailTo", true, "Email to");
+		options.addOption("r", "ratingBoundary", true, "Send email alert comprising of all star ratings at this number or below (default is 2)");
 		options.addOption("h", "help", false, "Display usage");
 		OptionGroup commandGroup = new OptionGroup();
 		commandGroup.setRequired(true);
@@ -444,7 +449,7 @@ public class CommentFetcher {
 		commandGroup.addOption( new Option("fn", "number", true, "Fetch specified number comments, One of fx is required"));
 		commandGroup.addOption( new Option("fu", "update", false, "Fetch latest, use this to update the file, One of fx is required"));
 		commandGroup.addOption( new Option("fd", "date", true, "Fetch by date (takes a timestamp, One of fx is required)"));
-		Option fr = new Option("fr", "range", true, "Fetch range example 1-20 will return the first 20 records, use -1 to go to the end. One of fx is required");
+		Option fr = new Option("fr", "range", true, "Fetch range example \"1 20\" will return the first 20 records, use -1 to go to the end. One of fx is required");
 		fr.setArgs(2);
 		commandGroup.addOption(fr);
 		commandGroup.setRequired(true);
@@ -644,20 +649,21 @@ public class CommentFetcher {
 		return badComments; 		
 	}
 	
-	
-	public void sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject){
+	//TODO Complete
+	public void sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject, int pAlertRating){
 		  if (pComments.size()==0)
 			  return;
-		  String host = "localhost";
+		  String host = pHost;
 	      Properties properties = System.getProperties();
 	      properties.setProperty("mail.smtp.host", host);
 	      Session session = Session.getDefaultInstance(properties);
 	      StringBuilder sb = new StringBuilder();
 	      for(Comment comment : pComments){
-	    	   sb.append(comment.getRating());
+	    	   if ((int) Integer.parseInt(sb.append(comment.getRating()).toString()) <= pAlertRating){
 	    	   sb.append(" ");
 	    	   sb.append(comment.getText());
 	    	   sb.append("\n");
+	    	   }
 		  }
 
 	      try{
