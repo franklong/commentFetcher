@@ -15,6 +15,7 @@ import java.util.Properties;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
@@ -74,7 +75,7 @@ public class CommentFetcher {
 	private static int mRecoveryTime = 30000;
 	private static final int NOT_FOUND=-1;
 	private static int matchIndex=NOT_FOUND;
-	private static final int COLUMN_TIMESTAMP=2;
+	private static final int COLUMN_TIMESTAMP=4;
 	private static final int COLUMN_RATING=0;
 	private static int mSortOrder[]={COLUMN_TIMESTAMP, COLUMN_RATING};
 	private static boolean mSort = false;
@@ -89,9 +90,10 @@ public class CommentFetcher {
 
 	private static final String mEmailFrom = "autotest";
 	private static String mEmailTo = "";
-	private static final String mHost = "smtp.gmail.com";
+	private static final String mHost = "localhost";
 	private static final String mSubject = "Low Ratings";
 	public static int mAlertRating = 2;
+	private List<Comment> mBadCommentsList = new ArrayList<Comment>() ;
 
 	public void getCommentsNumber(final String pUserName, final String pPassword, final String pPackageName, final int pNumberOfCommentToFetch, 
 			final String pFileName, final CSVFormat pFormat, final int pRequestThrottle){
@@ -207,6 +209,8 @@ public class CommentFetcher {
 		} else if (minsRemaining==0 && secsRemaining!=0){
 			consoleOutput = (String.format(CommentFetcher.FETCHED_MSG,
 					mFetched, mTotalToFetch)+", "+(int) (Math.floor(secsRemaining))+" seconds remaining");
+		} else if (minsRemaining==0 && secsRemaining==0){
+			consoleOutput = ("almost there I promise");
 		} else {
 			consoleOutput = "bored yet?";
 		}
@@ -257,11 +261,11 @@ public class CommentFetcher {
 							if (writeList != null){
 								appendCommentData(writeList, pFileName, pFormat);
 								System.out.println(String.format(CommentFetcher.FETCHED_UPDATE_MSG, 
-										writeList.size()));		
+										writeList.size()));
+								mBadCommentsList.addAll(getBadComments(writeList, mAlertRating));
 							}
 							//TODO this is where we email
 							//sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject, int pAlertRating)
-							sendMail(writeList, mEmailFrom, mEmailTo, mHost, mSubject, mAlertRating);
 						}
 					}  
 				 }
@@ -285,7 +289,7 @@ public class CommentFetcher {
 				}
 			 }
 		} while (matchIndex == -1 && mFetched < mEndRange);
-		
+		sendMail(mBadCommentsList, mEmailFrom, mEmailTo, mHost, mSubject, mAlertRating);
 		if(mSort)
 			sortAndSaveRecords(pFileName, pFormat);
 	}
@@ -653,6 +657,8 @@ public class CommentFetcher {
 	public void sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject, int pAlertRating){
 		  if (pComments.size()==0)
 			  return;
+		  
+		  /*
 		  String host = pHost;
 	      Properties properties = System.getProperties();
 	      properties.setProperty("mail.smtp.host", host);
@@ -677,6 +683,51 @@ public class CommentFetcher {
 	      }catch (MessagingException mex) {
 	         mex.printStackTrace();
 	      }
+	      */
+		  
+		  Properties props = new Properties();
+	        props.put("mail.smtp.host", "smtp.gmail.com");
+	        props.put("mail.smtp.auth", "true");
+	        props.put("mail.debug", "true");
+	        props.put("mail.smtp.port", 25);
+	        props.put("mail.smtp.socketFactory.port", 25);
+	        props.put("mail.smtp.starttls.enable", "true");
+	        props.put("mail.transport.protocol", "smtp");
+	        Session mailSession = null;
+
+	        mailSession = Session.getInstance(props,  
+	                new javax.mail.Authenticator() {
+	            protected PasswordAuthentication getPasswordAuthentication() {
+	                return new PasswordAuthentication("we7phone@gmail.com", "we7rocks");
+	            }
+	        });
+
+
+	        try {
+
+	            Transport transport = mailSession.getTransport();
+
+	            MimeMessage message = new MimeMessage(mailSession);
+
+	            message.setSubject(pSubject);
+	            message.setFrom(new InternetAddress(pFrom));
+	            String []to = new String[]{pTo};
+	            message.addRecipient(Message.RecipientType.TO, new InternetAddress(to[0]));
+	            StringBuilder sb = new StringBuilder();
+	            for(Comment comment : pComments){
+	                sb.append(comment.getRating());
+	                sb.append(" ");
+	                sb.append(comment.getText());
+	                sb.append("\n");
+	               }
+	            message.setContent(sb.toString(),"text/html");
+	            transport.connect();
+
+	            transport.sendMessage(message,message.getRecipients(Message.RecipientType.TO));
+	            transport.close();
+	        } catch (Exception exception) {
+	        	exception.printStackTrace();
+	        }
 	}
 	
 	
