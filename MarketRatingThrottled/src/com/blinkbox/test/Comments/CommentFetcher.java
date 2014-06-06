@@ -11,7 +11,15 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.lang.Math;
+import java.util.Properties;
+
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -24,6 +32,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.lang3.builder.CompareToBuilder;
+
 import com.gc.android.market.api.MarketSession;
 import com.gc.android.market.api.MarketSession.Callback;
 import com.gc.android.market.api.model.Market.Comment;
@@ -77,10 +86,11 @@ public class CommentFetcher {
 	private static long mDate;
 	private static int mNumberOfCommentsToFetch=-1;
 	private static int mTotalToFetch=-1;
+
 	private static final String mEmailFrom = "autotest";
 	private static String mEmailTo = "";
 	public static int mAlertRating;
-	
+
 	public void getCommentsNumber(final String pUserName, final String pPassword, final String pPackageName, final int pNumberOfCommentToFetch, 
 			final String pFileName, final CSVFormat pFormat, final int pRequestThrottle){
 		getComments(pUserName, pPassword, mPackageName, 0, pNumberOfCommentToFetch, mFileName, mCVSFormat, mThrottleTime, mRecoveryTime);
@@ -625,7 +635,6 @@ public class CommentFetcher {
 	}
 	
 	public List<Comment> getBadComments(List<Comment> pComents, int pRating){
-		
 		List<Comment> badComments = new ArrayList<Comment>(); 
 		for(Comment comment : pComents){
 			 if (comment.getRating() <= pRating){
@@ -633,6 +642,35 @@ public class CommentFetcher {
 			 }
 		}
 		return badComments; 		
+	}
+	
+	
+	public void sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject){
+		  if (pComments.size()==0)
+			  return;
+		  String host = "localhost";
+	      Properties properties = System.getProperties();
+	      properties.setProperty("mail.smtp.host", host);
+	      Session session = Session.getDefaultInstance(properties);
+	      StringBuilder sb = new StringBuilder();
+	      for(Comment comment : pComments){
+	    	   sb.append(comment.getRating());
+	    	   sb.append(" ");
+	    	   sb.append(comment.getText());
+	    	   sb.append("\n");
+		  }
+
+	      try{
+	         MimeMessage message = new MimeMessage(session);
+	         message.setFrom(new InternetAddress(pFrom));
+	         message.addRecipient(Message.RecipientType.TO, new InternetAddress(pTo));
+	         message.setSubject(pSubject);
+	         message.setText(sb.toString());
+	         Transport.send(message);
+	         System.out.println("Sent message successfully....");
+	      }catch (MessagingException mex) {
+	         mex.printStackTrace();
+	      }
 	}
 	
 	
