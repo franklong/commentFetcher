@@ -77,9 +77,12 @@ public class CommentFetcher {
 	private static long mDate;
 	private static int mNumberOfCommentsToFetch=-1;
 	private static int mTotalToFetch=-1;
+	private static final String mEmailFrom = "autotest";
+	private static String mEmailTo = "";
+	public static int mAlertRating;
 	
 	public void getCommentsNumber(final String pUserName, final String pPassword, final String pPackageName, final int pNumberOfCommentToFetch, 
-			final String pFileName, final CSVFormat pFormat, final int pRequestThrottle, final int pTimeout){
+			final String pFileName, final CSVFormat pFormat, final int pRequestThrottle){
 		getComments(pUserName, pPassword, mPackageName, 0, pNumberOfCommentToFetch, mFileName, mCVSFormat, mThrottleTime, mRecoveryTime);
 	}
 	
@@ -89,14 +92,14 @@ public class CommentFetcher {
 	}
 	
 	public void getCommentsRange(final String pUserName, final String pPassword, final String pPackageName, final int pStartIndex, final int pEndIndex,
-			final String pFileName, final CSVFormat pFormat, final int pRequestThrottle, final int pTimeout){
+			final String pFileName, final CSVFormat pFormat, final int pRequestThrottle){
 		int startIndex = pStartIndex;
 		int endIndex = pEndIndex;
 		getComments(pUserName, pPassword, mPackageName, --startIndex, endIndex, mFileName, mCVSFormat, mThrottleTime, mRecoveryTime);
 	}
 	
 	public void updateComments(final String pUserName, final String pPassword, final String pPackageName, final String pFileName,
-			final CSVFormat pFormat, final int pRequestThrottle, final int pTimeout){
+			final CSVFormat pFormat, final int pRequestThrottle, final int pTimeout, final String pEmailTo, final int pAlertRating){
 		final long timestamp = getLatestTimeStampFromFile(pFileName, pFormat, CommentFetcher.COLUMN_TIMESTAMP);
 		Timestamp stamp = new Timestamp(timestamp);
 		Date date = new Date(stamp.getTime());
@@ -105,7 +108,7 @@ public class CommentFetcher {
 			System.exit(ERROR);
 		}
 		System.out.println(String.format("Last update was: timestamp=[%d] date=[%s]", timestamp, date.toString()));
-		getCommentsDate(pUserName, pPassword, pPackageName, timestamp, pFileName, pFormat, pRequestThrottle, pTimeout);
+		getCommentsDate(pUserName, pPassword, pPackageName, timestamp, pFileName, pFormat, pRequestThrottle, pTimeout, pEmailTo, pAlertRating);
 	}
 		
 	private void getComments(final String pUserName, final String pPassword, final String pPackageName, final int pStartRange, final int pEndRange, 
@@ -211,7 +214,7 @@ public class CommentFetcher {
 	}
 	
 	public void getCommentsDate(final String pUserName, final String pPassword, final String pPackageName, final long pTimeStamp, final String pFileName,
-			final CSVFormat pFormat, final int pRequestThrottle, final int pTimeout){
+			final CSVFormat pFormat, final int pRequestThrottle, final int pTimeout, final String pEmailTo, final int pAlertRating){
 		MarketSession session = new MarketSession();
 			
 		session.login(pUserName, pPassword);
@@ -244,6 +247,7 @@ public class CommentFetcher {
 								System.out.println(String.format(CommentFetcher.FETCHED_UPDATE_MSG, 
 										writeList.size()));		
 							}
+							//TODO this is where we email
 						}
 					}  
 				 }
@@ -284,19 +288,19 @@ public class CommentFetcher {
 	              break;
 	          case UPDATE:
 	        	  System.out.println("Updating comments");
-	        	  commentFetcher.updateComments(mUserName, mPassword, mPackageName, mFileName, mCVSFormat, mThrottleTime, mRecoveryTime);
+	        	  commentFetcher.updateComments(mUserName, mPassword, mPackageName, mFileName, mCVSFormat, mThrottleTime, mRecoveryTime, mEmailTo, mAlertRating);
 	              break;
 	          case DATE:
 	        	  System.out.println("Updating comments by date");
-	        	  commentFetcher.getCommentsDate(mUserName, mPassword, mPackageName, mDate, mFileName, mCVSFormat, mThrottleTime, mRecoveryTime);
+	        	  commentFetcher.getCommentsDate(mUserName, mPassword, mPackageName, mDate, mFileName, mCVSFormat, mThrottleTime, mRecoveryTime, mEmailTo, mAlertRating);
 	              break;
 	          case RANGE:
 	        	  System.out.println("Updating comments by range");
-	        	  commentFetcher.getCommentsRange(mUserName, mPassword, mPackageName, mStartRange, mEndRange, mFileName, mCVSFormat, mThrottleTime, mRecoveryTime);
+	        	  commentFetcher.getCommentsRange(mUserName, mPassword, mPackageName, mStartRange, mEndRange, mFileName, mCVSFormat, mThrottleTime);
 	              break;
 	          case NUMBER:
 	        	  System.out.println("Updating comments by number");
-	        	  commentFetcher.getCommentsNumber(mUserName, mPassword, mPackageName, mNumberOfCommentsToFetch, mFileName, mCVSFormat, mThrottleTime, mRecoveryTime);
+	        	  commentFetcher.getCommentsNumber(mUserName, mPassword, mPackageName, mNumberOfCommentsToFetch, mFileName, mCVSFormat, mThrottleTime);
 	              break;
 	          default:
 	              break;
@@ -409,11 +413,7 @@ public class CommentFetcher {
 			}
 		});  
 	}
-	
-	//=========================================================EMAIL==========================================================
-	
-	
-	
+
 	//====================================================CMD LINE OPTIONS====================================================
 		 	
 	public Options makeOptions(){
@@ -426,6 +426,7 @@ public class CommentFetcher {
 		options.addOption("s", "sort", false, "Sort on multiple columns (takes a comma delimited string of zero based numbers e.g. 2,1,3)");
 		options.addOption("m", "recovery", true, "Time to wait before another request when a 429 has been issued");
 		options.addOption("e", "excel", false, "Use EXCEL format");
+		options.addOption("eto", "emailTo", true, "Email to");
 		options.addOption("h", "help", false, "Display usage");
 		OptionGroup commandGroup = new OptionGroup();
 		commandGroup.setRequired(true);
@@ -560,6 +561,14 @@ public class CommentFetcher {
 				mNumberOfCommentsToFetch = Integer.parseInt(number);
 			}else{
 				System.out.println("You must supply a number");
+				formatter.printHelp( "CommentFetcher", options);
+				System.exit(ERROR);
+			}
+		}
+		if (commandLine.hasOption("eto") && commandLine.hasOption("fu")){
+			if(commandLine.getOptionValue("eto") != null){
+				mEmailTo = commandLine.getOptionValue("eto");
+			}else{
 				formatter.printHelp( "CommentFetcher", options);
 				System.exit(ERROR);
 			}
