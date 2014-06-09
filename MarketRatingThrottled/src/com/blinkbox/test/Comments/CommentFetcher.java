@@ -63,7 +63,7 @@ public class CommentFetcher {
 	private static final int REQUEST_COMMENT_LIMIT=10;
 	private static final int ERROR=1;
 	private static final  String FETCHED_MSG = "Fetched %d of %d comments";
-	private static final  String FETCHED_UPDATE_MSG = "Fetched %d comments";
+	private static final  String FETCHED_UPDATE_MSG = "Fetched %d comments since last update";
 	private static final  String EXCEPTION_MSG = "RuntimeException caught. Waiting %d ms before retrying request";
 	private static CSVPrinter mPrinter = null;
 	private static String mPackageName = "com.we7.player";
@@ -71,8 +71,8 @@ public class CommentFetcher {
 	private static String mFileName;
 	private static String mUserName;
 	private static String mPassword;
-	private static int mThrottleTime = 2000;
-	private static int mRecoveryTime = 30000;
+	private static int mThrottleTime = 4000;
+	private static int mRecoveryTime = 60000;
 	private static final int NOT_FOUND=-1;
 	private static int matchIndex=NOT_FOUND;
 	private static final int COLUMN_TIMESTAMP=4;
@@ -264,8 +264,6 @@ public class CommentFetcher {
 										writeList.size()));
 								mBadCommentsList.addAll(getBadComments(writeList, mAlertRating));
 							}
-							//TODO this is where we email
-							//sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject, int pAlertRating)
 						}
 					}  
 				 }
@@ -289,6 +287,7 @@ public class CommentFetcher {
 				}
 			 }
 		} while (matchIndex == -1 && mFetched < mEndRange);
+		//TODO Sending email
 		sendMail(mBadCommentsList, mEmailFrom, mEmailTo, mHost, mSubject, mAlertRating);
 		if(mSort)
 			sortAndSaveRecords(pFileName, pFormat);
@@ -646,7 +645,7 @@ public class CommentFetcher {
 	public List<Comment> getBadComments(List<Comment> pComents, int pRating){
 		List<Comment> badComments = new ArrayList<Comment>(); 
 		for(Comment comment : pComents){
-			 if (comment.getRating() <= pRating){
+			 if (comment.getRating() <= pRating+1){ //don't ask why I have to +1 here, I don't know
 				 badComments.add(comment); 
 			 }
 		}
@@ -657,33 +656,7 @@ public class CommentFetcher {
 	public void sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject, int pAlertRating){
 		  if (pComments.size()==0)
 			  return;
-		  
-		  /*
-		  String host = pHost;
-	      Properties properties = System.getProperties();
-	      properties.setProperty("mail.smtp.host", host);
-	      Session session = Session.getDefaultInstance(properties);
-	      StringBuilder sb = new StringBuilder();
-	      for(Comment comment : pComments){
-	    	   if ((int) Integer.parseInt(sb.append(comment.getRating()).toString()) <= pAlertRating){
-	    	   sb.append(" ");
-	    	   sb.append(comment.getText());
-	    	   sb.append("\n");
-	    	   }
-		  }
-
-	      try{
-	         MimeMessage message = new MimeMessage(session);
-	         message.setFrom(new InternetAddress(pFrom));
-	         message.addRecipient(Message.RecipientType.TO, new InternetAddress(pTo));
-	         message.setSubject(pSubject);
-	         message.setText(sb.toString());
-	         Transport.send(message);
-	         System.out.println("Sent message successfully....");
-	      }catch (MessagingException mex) {
-	         mex.printStackTrace();
-	      }
-	      */
+		  System.out.println("And now to send an email...");
 		  
 		  Properties props = new Properties();
 	        props.put("mail.smtp.host", "smtp.gmail.com");
@@ -702,7 +675,6 @@ public class CommentFetcher {
 	            }
 	        });
 
-
 	        try {
 
 	            Transport transport = mailSession.getTransport();
@@ -714,15 +686,42 @@ public class CommentFetcher {
 	            String []to = new String[]{pTo};
 	            message.addRecipient(Message.RecipientType.TO, new InternetAddress(to[0]));
 	            StringBuilder sb = new StringBuilder();
+	            
+	            //sb.append("<html>");
+	            //sb.append("<head>");
+	            sb.append("<title>Comments which have a rating less than or equal to "+mAlertRating);
+	            sb.append("</title>");
+	            //sb.append("</head>");
+	            //sb.append("<body>");
+	            sb.append("<table>");
+	            
+	            sb.append("<tr>");
+            	sb.append("<th>Rating</th>");
+            	sb.append("<th>Comment</th>");
+            	sb.append("<th>Date</th>");
+            	sb.append("</tr>");
+            	
 	            for(Comment comment : pComments){
+	            	sb.append("<tr>");
+	            	sb.append("<td>");
 	                sb.append(comment.getRating());
-	                sb.append(" ");
+	                sb.append("</td>");
+	                sb.append("<td>");
 	                sb.append(comment.getText());
-	                sb.append("\n");
+	                sb.append("</td>");
+	                sb.append("<td>");
+	                Timestamp stamp = new Timestamp(comment.getCreationTime());
+	      		  	Date date = new Date(stamp.getTime());
+	                sb.append(date);
+	                sb.append("</td>");
+	                sb.append("\n\n");
+	                sb.append("</tr>");
 	               }
+	            
 	            message.setContent(sb.toString(),"text/html");
 	            transport.connect();
-
+	            
+	            //System.out.println(sb.toString());
 	            transport.sendMessage(message,message.getRecipients(Message.RecipientType.TO));
 	            transport.close();
 	        } catch (Exception exception) {
