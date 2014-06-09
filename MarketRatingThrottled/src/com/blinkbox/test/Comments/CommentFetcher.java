@@ -694,7 +694,6 @@ public class CommentFetcher {
 	            sb.append("<table>");
 	            
 	            sb.append("<tr>");
-	            sb.append("<th>AuthorID</th>");
             	sb.append("<th>Rating</th>");
             	sb.append("<th>Comment</th>");
             	sb.append("<th>Date</th>");
