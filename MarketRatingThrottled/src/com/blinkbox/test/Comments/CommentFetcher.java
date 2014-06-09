@@ -171,7 +171,7 @@ public class CommentFetcher {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-				} catch (RuntimeException  ex) { //JUST TRAP ALL FOR NOW
+				} catch (RuntimeException  ex) { //TRAPPING ALL
 					ex.printStackTrace();
 					System.out.println(String.format(CommentFetcher.EXCEPTION_MSG, pTimeout));
 					try {
@@ -287,7 +287,6 @@ public class CommentFetcher {
 				}
 			 }
 		} while (matchIndex == -1 && mFetched < mEndRange);
-		//TODO Sending email
 		sendMail(mBadCommentsList, mEmailFrom, mEmailTo, mHost, mSubject, mAlertRating);
 		if(mSort)
 			sortAndSaveRecords(pFileName, pFormat);
@@ -652,7 +651,8 @@ public class CommentFetcher {
 		return badComments; 		
 	}
 	
-	//TODO Complete
+	//====================================================EMAIL===============================================
+	
 	public void sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject, int pAlertRating){
 		  if (pComments.size()==0) {
 			  	System.out.println("No new comments with rating "+mAlertRating+" or below");
@@ -719,7 +719,6 @@ public class CommentFetcher {
 	            message.setContent(sb.toString(),"text/html");
 	            transport.connect();
 	            
-	            //System.out.println(sb.toString());
 	            transport.sendMessage(message,message.getRecipients(Message.RecipientType.TO));
 	            transport.close();
 	        } catch (Exception exception) {
