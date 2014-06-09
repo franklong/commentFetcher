@@ -646,7 +646,7 @@ public class CommentFetcher {
 		List<Comment> badComments = new ArrayList<Comment>(); 
 		for(Comment comment : pComents){
 			 if (comment.getRating() <= pRating+1){ //don't ask why I have to +1 here, I don't know
-				 badComments.add(comment); 
+				 badComments.add(comment);
 			 }
 		}
 		return badComments; 		
@@ -654,8 +654,10 @@ public class CommentFetcher {
 	
 	//TODO Complete
 	public void sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject, int pAlertRating){
-		  if (pComments.size()==0)
+		  if (pComments.size()==0) {
+			  	System.out.println("No new comments with rating "+mAlertRating+" or below");
 			  return;
+		  }
 		  System.out.println("And now to send an email...");
 		  
 		  Properties props = new Properties();
@@ -687,15 +689,12 @@ public class CommentFetcher {
 	            message.addRecipient(Message.RecipientType.TO, new InternetAddress(to[0]));
 	            StringBuilder sb = new StringBuilder();
 	            
-	            //sb.append("<html>");
-	            //sb.append("<head>");
 	            sb.append("<title>Comments which have a rating less than or equal to "+mAlertRating);
 	            sb.append("</title>");
-	            //sb.append("</head>");
-	            //sb.append("<body>");
 	            sb.append("<table>");
 	            
 	            sb.append("<tr>");
+	            sb.append("<th>AuthorID</th>");
             	sb.append("<th>Rating</th>");
             	sb.append("<th>Comment</th>");
             	sb.append("<th>Date</th>");
