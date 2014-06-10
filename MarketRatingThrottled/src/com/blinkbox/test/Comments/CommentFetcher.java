@@ -63,7 +63,7 @@ public class CommentFetcher {
 	private static final int REQUEST_COMMENT_LIMIT=10;
 	private static final int ERROR=1;
 	private static final  String FETCHED_MSG = "Fetched %d of %d comments";
-	private static final  String FETCHED_UPDATE_MSG = "Fetched %d comments";
+	private static final  String FETCHED_UPDATE_MSG = "Fetched %d comments since last update";
 	private static final  String EXCEPTION_MSG = "RuntimeException caught. Waiting %d ms before retrying request";
 	private static CSVPrinter mPrinter = null;
 	private static String mPackageName = "com.we7.player";
@@ -71,8 +71,8 @@ public class CommentFetcher {
 	private static String mFileName;
 	private static String mUserName;
 	private static String mPassword;
-	private static int mThrottleTime = 2000;
-	private static int mRecoveryTime = 30000;
+	private static int mThrottleTime = 4000;
+	private static int mRecoveryTime = 60000;
 	private static final int NOT_FOUND=-1;
 	private static int matchIndex=NOT_FOUND;
 	private static final int COLUMN_TIMESTAMP=4;
@@ -171,7 +171,7 @@ public class CommentFetcher {
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
-				} catch (RuntimeException  ex) { //JUST TRAP ALL FOR NOW
+				} catch (RuntimeException  ex) { //TRAPPING ALL
 					ex.printStackTrace();
 					System.out.println(String.format(CommentFetcher.EXCEPTION_MSG, pTimeout));
 					try {
@@ -264,8 +264,6 @@ public class CommentFetcher {
 										writeList.size()));
 								mBadCommentsList.addAll(getBadComments(writeList, mAlertRating));
 							}
-							//TODO this is where we email
-							//sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject, int pAlertRating)
 						}
 					}  
 				 }
@@ -445,7 +443,7 @@ public class CommentFetcher {
 		options.addOption("s", "sort", false, "Sort on multiple columns (takes a comma delimited string of zero based numbers e.g. 2,1,3)");
 		options.addOption("m", "recovery", true, "Time to wait before another request when a 429 has been issued");
 		options.addOption("e", "excel", false, "Use EXCEL format");
-		options.addOption("eto", "emailTo", true, "Email to");
+		options.addOption("eto", "emailTo", true, "Email to. Multiple email addresses should be separated by a space");
 		options.addOption("r", "ratingBoundary", true, "Send email alert comprising of all star ratings at this number or below (default is 2)");
 		options.addOption("h", "help", false, "Display usage");
 		OptionGroup commandGroup = new OptionGroup();
@@ -593,6 +591,11 @@ public class CommentFetcher {
 				System.exit(ERROR);
 			}
 		}
+		if (commandLine.hasOption("r")){
+			if(commandLine.getOptionValue("r") != null){
+				mAlertRating = Integer.parseInt(commandLine.getOptionValue("r"));
+			}
+		}
 	}
 	
 	public int[] convertStringArraytoIntArray(String[] sarray) {
@@ -647,44 +650,21 @@ public class CommentFetcher {
 	public List<Comment> getBadComments(List<Comment> pComents, int pRating){
 		List<Comment> badComments = new ArrayList<Comment>(); 
 		for(Comment comment : pComents){
-			 if (comment.getRating() <= pRating){
-				 badComments.add(comment); 
+			 if (comment.getRating() <= pRating){ //don't ask why I have to +1 here, I don't know
+				 badComments.add(comment);
 			 }
 		}
 		return badComments; 		
 	}
 	
-	//TODO Complete
+	//====================================================EMAIL===============================================
+	
 	public void sendMail(final List<Comment> pComments, final String pFrom, String pTo, String pHost, String pSubject, int pAlertRating){
-		  if (pComments.size()==0)
+		  if (pComments.size()==0) {
+			  	System.out.println("No new comments with rating "+mAlertRating+" or below");
 			  return;
-		  
-		  /*
-		  String host = pHost;
-	      Properties properties = System.getProperties();
-	      properties.setProperty("mail.smtp.host", host);
-	      Session session = Session.getDefaultInstance(properties);
-	      StringBuilder sb = new StringBuilder();
-	      for(Comment comment : pComments){
-	    	   if ((int) Integer.parseInt(sb.append(comment.getRating()).toString()) <= pAlertRating){
-	    	   sb.append(" ");
-	    	   sb.append(comment.getText());
-	    	   sb.append("\n");
-	    	   }
 		  }
-
-	      try{
-	         MimeMessage message = new MimeMessage(session);
-	         message.setFrom(new InternetAddress(pFrom));
-	         message.addRecipient(Message.RecipientType.TO, new InternetAddress(pTo));
-	         message.setSubject(pSubject);
-	         message.setText(sb.toString());
-	         Transport.send(message);
-	         System.out.println("Sent message successfully....");
-	      }catch (MessagingException mex) {
-	         mex.printStackTrace();
-	      }
-	      */
+		  System.out.println("And now to send an email...");
 		  
 		  Properties props = new Properties();
 	        props.put("mail.smtp.host", "smtp.gmail.com");
@@ -703,7 +683,6 @@ public class CommentFetcher {
 	            }
 	        });
 
-
 	        try {
 
 	            Transport transport = mailSession.getTransport();
@@ -715,15 +694,37 @@ public class CommentFetcher {
 	            String []to = new String[]{pTo};
 	            message.addRecipient(Message.RecipientType.TO, new InternetAddress(to[0]));
 	            StringBuilder sb = new StringBuilder();
+	            
+	            sb.append("<title>Comments which have a rating less than or equal to "+mAlertRating);
+	            sb.append("</title>");
+	            sb.append("<table>");
+	            
+	            sb.append("<tr>");
+            	sb.append("<th>Rating</th>");
+            	sb.append("<th>Comment</th>");
+            	sb.append("<th>Date</th>");
+            	sb.append("</tr>");
+            	
 	            for(Comment comment : pComments){
+	            	sb.append("<tr>");
+	            	sb.append("<td>");
 	                sb.append(comment.getRating());
-	                sb.append(" ");
+	                sb.append("</td>");
+	                sb.append("<td>");
 	                sb.append(comment.getText());
-	                sb.append("\n");
+	                sb.append("</td>");
+	                sb.append("<td>");
+	                Timestamp stamp = new Timestamp(comment.getCreationTime());
+	      		  	Date date = new Date(stamp.getTime());
+	                sb.append(date);
+	                sb.append("</td>");
+	                sb.append("\n\n");
+	                sb.append("</tr>");
 	               }
+	            
 	            message.setContent(sb.toString(),"text/html");
 	            transport.connect();
-
+	            
 	            transport.sendMessage(message,message.getRecipients(Message.RecipientType.TO));
 	            transport.close();
 	        } catch (Exception exception) {
