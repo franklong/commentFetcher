@@ -442,7 +442,7 @@ public class CommentFetcher {
 		options.addOption("s", "sort", false, "Sort on multiple columns (takes a comma delimited string of zero based numbers e.g. 2,1,3)");
 		options.addOption("m", "recovery", true, "Time to wait before another request when a 429 has been issued");
 		options.addOption("e", "excel", false, "Use EXCEL format");
-		options.addOption("eto", "emailTo", true, "Email to");
+		options.addOption("eto", "emailTo", true, "Email to. Multiple email addresses should be separated by a space");
 		options.addOption("r", "ratingBoundary", true, "Send email alert comprising of all star ratings at this number or below (default is 2)");
 		options.addOption("h", "help", false, "Display usage");
 		OptionGroup commandGroup = new OptionGroup();
@@ -590,6 +590,11 @@ public class CommentFetcher {
 				System.exit(ERROR);
 			}
 		}
+		if (commandLine.hasOption("r")){
+			if(commandLine.getOptionValue("r") != null){
+				mAlertRating = Integer.parseInt(commandLine.getOptionValue("r"));
+			}
+		}
 	}
 	
 	public int[] convertStringArraytoIntArray(String[] sarray) {
@@ -644,7 +649,7 @@ public class CommentFetcher {
 	public List<Comment> getBadComments(List<Comment> pComents, int pRating){
 		List<Comment> badComments = new ArrayList<Comment>(); 
 		for(Comment comment : pComents){
-			 if (comment.getRating() <= pRating+1){ //don't ask why I have to +1 here, I don't know
+			 if (comment.getRating() <= pRating){ //don't ask why I have to +1 here, I don't know
 				 badComments.add(comment);
 			 }
 		}
