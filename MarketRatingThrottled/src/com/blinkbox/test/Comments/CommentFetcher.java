@@ -289,6 +289,7 @@ public class CommentFetcher {
 				}
 			 }
 		} while (matchIndex == -1 && mFetched < mEndRange);
+		
 		sendMail(mBadCommentsList, mEmailFrom, mEmailTo, mHost, mSubject, mAlertRating);
 		if(mSort)
 			sortAndSaveRecords(pFileName, pFormat);
