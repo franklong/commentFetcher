@@ -2,9 +2,9 @@ Example run parameters:
 ==============
 -f  Z:\_\googleplay\comments.csv
 
--u --android login--
+-u ((android login))
 
--p --android password--
+-p ((android password))
 
 -e
 
@@ -12,7 +12,7 @@ Example run parameters:
 
 -s
 
--eto barryi@blinkbox.com sven@blinkbox.com andrewa@blinkbox.com andrewba@blinkbox.com frankl@blinkbox.com simonl@blinkbox.com chrisn@blinkbox.com louise@blinkbox.com
+-eto email1@blinkbox.com email2@blinkbox.com
 
 -r 4
 
