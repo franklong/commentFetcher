@@ -1,12 +1,19 @@
 Example run parameters:
 ==============
 -f  Z:\_\googleplay\comments.csv
+
 -u androidwe7@gmail.com
+
 -p we7monday
+
 -e
+
 -fu
+
 -s
+
 -eto barryi@blinkbox.com sven@blinkbox.com andrewa@blinkbox.com andrewba@blinkbox.com frankl@blinkbox.com simonl@blinkbox.com chrisn@blinkbox.com louise@blinkbox.com
+
 -r 4
 
 
