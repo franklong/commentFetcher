@@ -1,6 +1,5 @@
-commentFetcher
-==============
 Example run parameters:
+==============
 -f  Z:\_\googleplay\comments.csv
 -u androidwe7@gmail.com
 -p we7monday
